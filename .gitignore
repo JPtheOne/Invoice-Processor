@@ -1,0 +1,19 @@
+# Files serving as tests
+/samples
+/test
+*.zip
+/unzipped
+*.xlsx
+*.xml
+
+# Virtual environment directory (default name)
+.env/
+.venv/
+
+# Pipenv specific lock file
+Pipfile.lock
+
+/__pycache__
+/build
+/dist
+gui.spec
