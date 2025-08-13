@@ -72,16 +72,6 @@ python src/gui.py
 
 ---
 
-## 🌐 Running the Web Version (Streamlit)
-```bash
-streamlit run app_streamlit.py
-```
-- Open the link printed in the terminal (usually [http://localhost:8501](http://localhost:8501)).
-- Upload one or more ZIP files containing CFDI XML files.
-- Download the generated Excel file.
-
----
-
 ## 📤 Building the Desktop Executable
 You can bundle the PyQt5 app into a standalone `.exe`:
 
@@ -92,21 +82,6 @@ pyinstaller src/gui.py --onefile --noconsole --icon=assets/logo.ico
 - Replace `assets/logo.ico` with your own icon if needed.
 
 ---
-
-## ☁ Deploying the Web Version (Google Cloud Run)
-1. Create a Dockerfile for Streamlit.
-2. Build and push to Google Cloud Build:
-   ```bash
-   gcloud builds submit --tag gcr.io/PROJECT_ID/cfdi-extractor
-   ```
-3. Deploy to Cloud Run:
-   ```bash
-   gcloud run deploy cfdi-extractor --image gcr.io/PROJECT_ID/cfdi-extractor --platform managed --region us-central1 --allow-unauthenticated=false
-   ```
-4. Map a custom domain and add access restrictions (Cloudflare Access or IAP).
-
----
-
 ## 🧪 Testing
 ### Desktop:
 1. Run `python src/gui.py`.
