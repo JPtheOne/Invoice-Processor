@@ -13,7 +13,8 @@
 # Pipenv specific lock file
 Pipfile.lock
 
-/__pycache__
+*/__pycache__
 /build
 /dist
 gui.spec
+src\__pycache__
