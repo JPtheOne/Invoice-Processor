@@ -88,9 +88,3 @@ pyinstaller src/gui.py --onefile --noconsole --icon=assets/logo.ico
 2. Use test files from `/test` folder.
 3. Confirm Excel file matches expected data.
 
-### Web:
-1. Run `streamlit run app_streamlit.py`.
-2. Upload the same test ZIPs.
-3. Compare the Excel output with desktop output.
-
----
