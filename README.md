@@ -15,7 +15,7 @@ Supports both **desktop GUI** (PyQt5) and **web** (Streamlit) versions, with Exc
 │   ├── identifier.py        # Detects CFDI type from XML
 │   ├── processor.py         # Routes XML to correct parser, updates counters, saves results
 │   └── gui.py               # Desktop PyQt5 interface
-├── test/                    # Test XMLs and ZIP samples
+├── test/                    # Test XMLs and ZIP samples, NOT ON REPO (used for local tests only)
 ├── venv/                    # Python virtual environment (not committed)
 ├── .gitignore               # Git ignore rules
 └── requirements.txt         # Python dependencies
