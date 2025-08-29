@@ -1,4 +1,4 @@
-# CFDI Extractor
+# Invoice Processor
 
 A Python-based tool for accountants to extract and consolidate data from Mexican CFDI XML files (Ingreso/Egreso, Pago, Nómina).  
 Supports both **desktop GUI** (PyQt5) and **web** (Streamlit) versions, with Excel export.
@@ -87,4 +87,10 @@ pyinstaller src/gui.py --onefile --noconsole --icon=assets/logo.ico
 1. Run `python src/gui.py`.
 2. Use test files from `/test` folder.
 3. Confirm Excel file matches expected data.
+4. You should see something like this:
+   
+<p align="center">
+  <img width="398" height="382" alt="image" src="https://github.com/user-attachments/assets/d6b55596-babd-49fe-99d5-5f83147c4511" />
+</p>
+
 
