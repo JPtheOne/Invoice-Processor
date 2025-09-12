@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="es">
+
+<head>
+  <meta charset="utf-8">
+  <title>Extractor de datos de CFDI </title>
+</head>
+
+<body>
+  <h1>Extractor de datos de CFDI</h1>
+  <form id="form" method="post" action="/process-folder" enctype="multipart/form-data">
+    <div>
+      <label>Selecciona la carpeta con tus archivos:</label><br>
+      <input type="file" name="folder" webkitdirectory multiple required>
+    </div>
+    <div>
+      <label>Nombre del archivo de salida:</label><br>
+      <input type="text" name="output_name" placeholder="Excel_final">
+    </div>
+    <button type="submit">Procesar y descargar</button>
+  </form>
+  <p id="status"></p>
+  <script>
+    document.getElementById('form').addEventListener('submit', () => {
+      document.getElementById('status').textContent = 'Procesando...';
+    });
+  </script>
+</body>
+
+</html>
