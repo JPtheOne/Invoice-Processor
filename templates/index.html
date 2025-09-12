@@ -1,30 +1,115 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="es">
-
 <head>
   <meta charset="utf-8">
-  <title>Extractor de datos de CFDI </title>
+  <title>Procesador de Facturas</title>
+  <link rel="icon" href="{{ url_for('static', filename='logo.ico') }}">
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+    }
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: #f7f9fc;
+      font-family: Arial, sans-serif;
+      color: #333;
+    }
+    .container {
+      text-align: center;
+      background: #fff;
+      padding: 2rem;
+      border-radius: 8px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      max-width: 500px;
+      width: 100%;
+    }
+    h1 {
+      color: #2c3e50;
+    }
+    label {
+      font-weight: bold;
+    }
+    input, button {
+      margin-top: 0.5rem;
+      margin-bottom: 1rem;
+      width: 100%;
+      padding: 0.6rem;
+      border-radius: 4px;
+      border: 1px solid #ccc;
+    }
+    button {
+      background: #3498db;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #2980b9;
+    }
+    #status {
+      margin-top: 1rem;
+      font-style: italic;
+    }
+    #counters {
+      margin-top: 1.5rem;
+      background: #ecf0f1;
+      padding: 1rem;
+      border-radius: 6px;
+      text-align: left;
+    }
+  </style>
 </head>
-
 <body>
-  <h1>Extractor de datos de CFDI</h1>
-  <form id="form" method="post" action="/process-folder" enctype="multipart/form-data">
-    <div>
-      <label>Selecciona la carpeta con tus archivos:</label><br>
-      <input type="file" name="folder" webkitdirectory multiple required>
-    </div>
-    <div>
-      <label>Nombre del archivo de salida:</label><br>
-      <input type="text" name="output_name" placeholder="Excel_final">
-    </div>
-    <button type="submit">Procesar y descargar</button>
-  </form>
-  <p id="status"></p>
+  <div class="container">
+    <h1>Procesador de Facturas</h1>
+    <form id="form">
+      <div>
+        <label>Selecciona la carpeta con tus archivos:</label><br>
+        <input type="file" name="folder" webkitdirectory multiple required>
+      </div>
+      <div>
+        <label>Nombre del archivo de salida:</label><br>
+        <input type="text" name="output_name" placeholder="Excel_final">
+      </div>
+      <button type="submit">Procesar y descargar</button>
+    </form>
+    <p id="status"></p>
+    <div id="counters"></div>
+  </div>
+
   <script>
-    document.getElementById('form').addEventListener('submit', () => {
-      document.getElementById('status').textContent = 'Procesando...';
+    document.getElementById('form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const status = document.getElementById('status');
+      const countersDiv = document.getElementById('counters');
+      status.textContent = 'Procesando...';
+      countersDiv.innerHTML = '';
+
+      const formData = new FormData(e.target);
+      const res = await fetch('/process-folder', { method: 'POST', body: formData });
+
+      if (!res.ok) {
+        status.textContent = 'Error al procesar';
+        return;
+      }
+
+      const blob = await res.blob();
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = res.headers.get('Content-Disposition').split('filename=')[1].replace(/"/g, '');
+      link.click();
+
+      status.textContent = '¡Procesado con éxito!';
+      let html = '<h3>Resumen</h3><ul>';
+      ['Total','I/E','P','N','Desconocido'].forEach(k => {
+        html += `<li>${k}: ${res.headers.get('X-Counter-' + k)}</li>`;
+      });
+      html += '</ul>';
+      countersDiv.innerHTML = html;
     });
   </script>
 </body>
-
 </html>
