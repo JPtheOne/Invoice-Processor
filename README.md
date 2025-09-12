@@ -82,7 +82,7 @@ pyinstaller src/gui.py --onefile --noconsole --icon=assets/logo.ico
 - Replace `assets/logo.ico` with your own icon if needed.
 
 ---
-## 🧪 Testing
+## 🧪 Usage
 ### Desktop:
 1. Run `python src/gui.py`.
 2. Use test files from `/test` folder.
