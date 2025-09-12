@@ -1,14 +1,15 @@
 import os, io, tempfile, datetime as dt
 from werkzeug.utils import secure_filename
 from processor import process_cfdi, unzip_folder  # importing our functions
-from flask import Flask, render_template, request, send_file, jsonify
+from flask import Flask, render_template, request, send_file, jsonify, make_response
 
 app = Flask(__name__, template_folder="../templates")
 
 XML_EXT = {".xml"}
 ZIP_EXT = {".zip"}
 
-def ext(path): return os.path.splitext(path)[1].lower()
+def ext(path): 
+    return os.path.splitext(path)[1].lower()
 
 @app.get("/")
 def index():
@@ -34,7 +35,6 @@ def process_folder():
             os.makedirs(raw_dir, exist_ok=True)
             os.makedirs(unzipped_dir, exist_ok=True)
 
-            # Save uploaded files
             saved = []
             for f in files:
                 if not f.filename: 
@@ -45,17 +45,13 @@ def process_folder():
                 saved.append(path)
 
             xmls = []
-
-            # Processing compressed files
             for p in saved:
                 if ext(p) in ZIP_EXT:
                     extracted = unzip_folder(p, unzipped_dir)
                     xmls.extend([q for q in extracted if ext(q) in XML_EXT])
 
-            # Processing XMLs directly uploaded
             xmls.extend([p for p in saved if ext(p) in XML_EXT])
 
-            # If there are no XML files found
             if not xmls:
                 return jsonify({"error": "No se encontraron XML"}), 400
 
@@ -67,12 +63,27 @@ def process_folder():
             with open(out_path, "rb") as f:
                 payload = io.BytesIO(f.read())
 
-        return send_file(
+        # ✅ Construimos la respuesta con headers personalizados (sin "/" en nombres)
+        response = make_response(send_file(
             payload,
             as_attachment=True,
             download_name=output_filename,
             mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        ))
+
+        response.headers["X-Counter-Total"] = str(counters["Total"])
+        response.headers["X-Counter-IE"] = str(counters["I/E"])
+        response.headers["X-Counter-P"] = str(counters["P"])
+        response.headers["X-Counter-N"] = str(counters["N"])
+        response.headers["X-Counter-Desconocido"] = str(counters["Desconocido"])
+
+        # Habilitar que el frontend pueda leer esos headers
+        response.headers["Access-Control-Expose-Headers"] = (
+            "X-Counter-Total, X-Counter-IE, X-Counter-P, X-Counter-N, X-Counter-Desconocido, Content-Disposition"
         )
+
+        return response
+
     except Exception as e:
         return jsonify({"error": f"Error: {e}"}), 500
 

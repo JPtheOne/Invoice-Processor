@@ -49,9 +49,24 @@
     button:hover {
       background: #2980b9;
     }
+    #resetBtn {
+      background: #e74c3c;
+    }
+    #resetBtn:hover {
+      background: #c0392b;
+    }
     #status {
       margin-top: 1rem;
       font-style: italic;
+    }
+    #successBox {
+      margin-top: 1rem;
+      padding: 1rem;
+      border-radius: 6px;
+      background: #d4edda;
+      color: #155724;
+      font-weight: bold;
+      display: none; /* oculto al inicio */
     }
     #counters {
       margin-top: 1.5rem;
@@ -59,6 +74,13 @@
       padding: 1rem;
       border-radius: 6px;
       text-align: left;
+      white-space: pre-line; /* respeta saltos de línea */
+      font-family: monospace;
+    }
+    progress {
+      width: 100%;
+      height: 20px;
+      margin-top: 1rem;
     }
   </style>
 </head>
@@ -76,23 +98,44 @@
       </div>
       <button type="submit">Procesar y descargar</button>
     </form>
+
+    <button id="resetBtn">Limpiar y subir otro</button>
+
+    <progress id="progress" value="0" max="100" style="display:none;"></progress>
     <p id="status"></p>
+    <div id="successBox"></div> <!-- Aquí va el mensaje tipo QMessageBox -->
     <div id="counters"></div>
   </div>
 
   <script>
-    document.getElementById('form').addEventListener('submit', async (e) => {
+    const form = document.getElementById('form');
+    const status = document.getElementById('status');
+    const countersDiv = document.getElementById('counters');
+    const progress = document.getElementById('progress');
+    const resetBtn = document.getElementById('resetBtn');
+    const successBox = document.getElementById('successBox');
+
+    form.addEventListener('submit', async (e) => {
       e.preventDefault();
-      const status = document.getElementById('status');
-      const countersDiv = document.getElementById('counters');
       status.textContent = 'Procesando...';
       countersDiv.innerHTML = '';
+      successBox.style.display = 'none';
+      progress.style.display = 'block';
+      progress.value = 10;
+
+      // Simula avance
+      let interval = setInterval(() => {
+        if (progress.value < 90) progress.value += 10;
+      }, 400);
 
       const formData = new FormData(e.target);
       const res = await fetch('/process-folder', { method: 'POST', body: formData });
 
+      clearInterval(interval);
+
       if (!res.ok) {
         status.textContent = 'Error al procesar';
+        progress.style.display = 'none';
         return;
       }
 
@@ -102,13 +145,38 @@
       link.download = res.headers.get('Content-Disposition').split('filename=')[1].replace(/"/g, '');
       link.click();
 
+      progress.value = 100;
       status.textContent = '¡Procesado con éxito!';
-      let html = '<h3>Resumen</h3><ul>';
-      ['Total','I/E','P','N','Desconocido'].forEach(k => {
-        html += `<li>${k}: ${res.headers.get('X-Counter-' + k)}</li>`;
-      });
-      html += '</ul>';
-      countersDiv.innerHTML = html;
+
+      // === Construcción del resumen estilo PyQt ===
+      const total = res.headers.get('X-Counter-Total') || 0;
+      const ie = res.headers.get('X-Counter-IE') || 0;
+      const p = res.headers.get('X-Counter-P') || 0;
+      const n = res.headers.get('X-Counter-N') || 0;
+      const desconocido = res.headers.get('X-Counter-Desconocido') || 0;
+
+      const resumen = 
+        "Resumen:\n" +
+        `Total de facturas en XM procesados: ${total}\n` +
+        `Ingreso/Egreso: ${ie}, Pago: ${p}, Nómina: ${n}, Desconocidos: ${desconocido}`;
+
+      countersDiv.textContent = resumen; // lo muestra en la interfaz
+
+      // Mostrar mensaje tipo QMessageBox en un div
+      successBox.textContent = "Éxito: El procesamiento se completó con éxito.";
+      successBox.style.display = 'block';
+
+      progress.style.display = 'none';
+    });
+
+    // Limpiar todo
+    resetBtn.addEventListener('click', () => {
+      form.reset();
+      status.textContent = '';
+      countersDiv.innerHTML = '';
+      successBox.style.display = 'none';
+      progress.style.display = 'none';
+      progress.value = 0;
     });
   </script>
 </body>
