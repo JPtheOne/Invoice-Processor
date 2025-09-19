@@ -1,167 +1,142 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="utf-8">
-  <title>Procesador de Facturas</title>
-  <link rel="icon" href="{{ url_for('static', filename='logo.ico') }}">
-  <style>
-    html, body {
-      height: 100%;
-      margin: 0;
-    }
-    body {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      background: #f7f9fc;
-      font-family: Arial, sans-serif;
-      color: #333;
-    }
-    .container {
-      text-align: center;
-      background: #fff;
-      padding: 2rem;
-      border-radius: 8px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-      max-width: 500px;
-      width: 100%;
-    }
-    h1 {
-      color: #2c3e50;
-    }
-    label {
-      font-weight: bold;
-    }
-    input, button {
-      margin-top: 0.5rem;
-      margin-bottom: 1rem;
-      width: 100%;
-      padding: 0.6rem;
-      border-radius: 4px;
-      border: 1px solid #ccc;
-    }
-    button {
-      background: #3498db;
-      color: white;
-      border: none;
-      cursor: pointer;
-    }
-    button:hover {
-      background: #2980b9;
-    }
-    #resetBtn {
-      background: #e74c3c;
-    }
-    #resetBtn:hover {
-      background: #c0392b;
-    }
-    #status {
-      margin-top: 1rem;
-      font-style: italic;
-    }
-    #counters {
-      margin-top: 1.5rem;
-      background: #ecf0f1;
-      padding: 1rem;
-      border-radius: 6px;
-      text-align: left;
-      white-space: pre-line; /* respeta saltos de línea */
-      font-family: monospace;
-    }
-    progress {
-      width: 100%;
-      height: 20px;
-      margin-top: 1rem;
-    }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <h1>Procesador de Facturas</h1>
-    <form id="form">
-      <div>
-        <label>Selecciona la carpeta con tus archivos:</label><br>
-        <input type="file" name="folder" webkitdirectory multiple required>
-      </div>
-      <div>
-        <label>Nombre del archivo de salida:</label><br>
-        <input type="text" name="output_name" placeholder="Excel_final">
-      </div>
-      <button type="submit">Procesar y descargar</button>
-    </form>
+import os
 
-    <button id="resetBtn">Limpiar y subir otro</button>
+import sys
+from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QIcon
+from processor import process_cfdi, unzip_folder  
+from PyQt5.QtWidgets import (QApplication, QMainWindow, QPushButton, QVBoxLayout,QWidget, QFileDialog, QLabel, QLineEdit, QMessageBox)
 
-    <progress id="progress" value="0" max="100" style="display:none;"></progress>
-    <p id="status"></p>
-    <div id="counters"></div>
-  </div>
 
-  <script>
-    const form = document.getElementById('form');
-    const status = document.getElementById('status');
-    const countersDiv = document.getElementById('counters');
-    const progress = document.getElementById('progress');
-    const resetBtn = document.getElementById('resetBtn');
+class FolderSelectorApp(QMainWindow):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("Extractor de CFDIs")
+        self.setGeometry(300, 200, 400, 350)
 
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      status.textContent = 'Procesando...';
-      countersDiv.innerHTML = '';
-      progress.style.display = 'block';
-      progress.value = 10;
+        # Main layout
+        layout = QVBoxLayout()
 
-      // Simula avance
-      let interval = setInterval(() => {
-        if (progress.value < 90) progress.value += 10;
-      }, 400);
+        # Folder inputs
+        self.label_folder1 = QLabel("Carpeta con archivos ZIP:")
+        self.input_folder1 = QLineEdit(self)
+        self.button_folder1 = QPushButton("Seleccionar carpeta origen")
+        self.button_folder1.clicked.connect(self.select_folder1)
 
-      const formData = new FormData(e.target);
-      const res = await fetch('/process-folder', { method: 'POST', body: formData });
+        self.label_folder2 = QLabel("Carpeta de salida para Excel:")
+        self.input_folder2 = QLineEdit(self)
+        self.button_folder2 = QPushButton("Seleccionar carpeta destino")
+        self.button_folder2.clicked.connect(self.select_folder2)
 
-      clearInterval(interval);
+        # Input for output file name
+        self.label_output = QLabel("Nombre del archivo de salida (Excel):")
+        self.input_output = QLineEdit(self)
+        self.input_output.setPlaceholderText("Ejemplo: Excel_final")
 
-      if (!res.ok) {
-        status.textContent = 'Error al procesar';
-        progress.style.display = 'none';
-        return;
-      }
+        # Status label
+        self.status_label = QLabel("")
+        self.status_label.setAlignment(Qt.AlignCenter)
 
-      const blob = await res.blob();
-      const link = document.createElement('a');
-      link.href = URL.createObjectURL(blob);
-      link.download = res.headers.get('Content-Disposition').split('filename=')[1].replace(/"/g, '');
-      link.click();
+        # Button to execute the script
+        self.run_button = QPushButton("Ejecutar Script")
+        self.run_button.setIcon(QIcon("play_icon.png"))  # Change "play_icon.png" to your icon
+        self.run_button.clicked.connect(self.run_script)
 
-      progress.value = 100;
-      status.textContent = '¡Procesado con éxito!';
+        # Add widgets to layout
+        layout.addWidget(self.label_folder1)
+        layout.addWidget(self.input_folder1)
+        layout.addWidget(self.button_folder1)
+        layout.addWidget(self.label_folder2)
+        layout.addWidget(self.input_folder2)
+        layout.addWidget(self.button_folder2)
+        layout.addWidget(self.label_output)
+        layout.addWidget(self.input_output)
+        layout.addWidget(self.status_label)
+        layout.addWidget(self.run_button)
 
-      // === Construcción del resumen estilo PyQt ===
-      const total = res.headers.get('X-Counter-Total') || 0;
-      const ie = res.headers.get('X-Counter-I/E') || 0;
-      const p = res.headers.get('X-Counter-P') || 0;
-      const n = res.headers.get('X-Counter-N') || 0;
-      const desconocido = res.headers.get('X-Counter-Desconocido') || 0;
+        # Configure the main container
+        container = QWidget()
+        container.setLayout(layout)
+        self.setCentralWidget(container)
 
-      const resumen = 
-        "Resumen de procesamiento:\n" +
-        `Total XML procesados: ${total}\n` +
-        `I/E: ${ie}, P: ${p}, N: ${n}, Desconocidos: ${desconocido}`;
+    def select_folder1(self):
+        folder = QFileDialog.getExistingDirectory(self, "Seleccionar carpeta origen")
+        if folder:
+            self.input_folder1.setText(folder)
 
-      countersDiv.textContent = resumen; // lo muestra en la interfaz
-      alert("Éxito: El procesamiento se completó con éxito.\n\n" + resumen); // popup
+    def select_folder2(self):
+        folder = QFileDialog.getExistingDirectory(self, "Seleccionar Carpeta destino")
+        if folder:
+            self.input_folder2.setText(folder)
 
-      progress.style.display = 'none';
-    });
+    def run_script(self):
+        folder1 = self.input_folder1.text()
+        folder2 = self.input_folder2.text()
+        output_filename_obtained = self.input_output.text()
+        output_filename = output_filename_obtained + ".xlsx"
 
-    // Limpiar todo
-    resetBtn.addEventListener('click', () => {
-      form.reset();
-      status.textContent = '';
-      countersDiv.innerHTML = '';
-      progress.style.display = 'none';
-      progress.value = 0;
-    });
-  </script>
-</body>
-</html>
+        if not folder1 or not folder2 or not output_filename:
+            QMessageBox.warning(self, "Error", "Por favor selecciona ambas carpetas y un nombre para el archivo de salida.")
+            return
+
+        try:
+            # Change status to "Processing in progress"
+            self.status_label.setText("Ejecución en progreso... Por favor espera.")
+            QApplication.processEvents()  # Update the GUI while the script is running
+
+            # Ensure the output folder exists
+            os.makedirs(folder2, exist_ok=True)
+            output_path = os.path.join(folder2, output_filename)
+
+            # Counters for CFDI types
+            counters = {"Total": 0, "I/E": 0, "P": 0, "N": 0, "Desconocido": 0}
+            unzipped_folder = os.path.join(folder2, "unzipped")
+            os.makedirs(unzipped_folder, exist_ok=True)
+
+            # Process each zip file in the source folder
+            for zip_file in os.listdir(folder1):
+                zip_path = os.path.join(folder1, zip_file)
+                if zip_file.endswith(".zip"):
+                    print(f"Procesando archivo ZIP: {zip_file}")
+                    extracted_files = unzip_folder(zip_path, unzipped_folder)
+                    for cfdi_file in extracted_files:
+                        if cfdi_file.endswith(".xml"):
+                            counters["Total"] += 1
+                            process_cfdi(cfdi_file, output_path, counters)
+
+            # Show success message
+            QMessageBox.information(self, "Éxito", "El procesamiento se completó con éxito.")
+            print("\nResumen de procesamiento:")
+            print(f"Total XML procesados: {counters['Total']}")
+            print(f"I/E: {counters['I/E']}, P: {counters['P']}, N: {counters['N']}, Desconocidos: {counters['Desconocido']}")
+
+            # Ask if user wants to perform another operation
+            self.ask_for_restart()
+
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Se produjo un error: {e}")
+        finally:
+            # Clear status
+            self.status_label.setText("")
+
+    def ask_for_restart(self):
+        reply = QMessageBox.question(
+            self,
+            "Finalizado",
+            "¿Deseas realizar otra operación?",
+            QMessageBox.Yes | QMessageBox.No,
+        )
+        if reply == QMessageBox.Yes:
+            # Clear all fields
+            self.input_folder1.clear()
+            self.input_folder2.clear()
+            self.input_output.clear()
+            self.status_label.setText("")
+        else:
+            self.close()
+
+
+if __name__ == "__main__":
+    app = QApplication(sys.argv)
+    window = FolderSelectorApp()
+    window.show()
+    sys.exit(app.exec_())

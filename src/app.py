@@ -1,23 +1,87 @@
 import os, io, tempfile, datetime as dt
 from werkzeug.utils import secure_filename
+from werkzeug.security import check_password_hash
+from dotenv import load_dotenv
 from processor import process_cfdi, unzip_folder  # importing our functions
-from flask import Flask, render_template, request, send_file, jsonify, make_response
+from flask import Flask, render_template, request, send_file, jsonify, make_response, flash, redirect, url_for
+
+# Flask-Login
+from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
+
+# Cargar variables de entorno
+load_dotenv()
 
 app = Flask(__name__, template_folder="../templates")
+app.config['SECRET_KEY'] = os.getenv("SECRET_KEY")
 
+# Login manager setup
+login_manager = LoginManager(app)
+login_manager.login_view = "login"
+
+# Credenciales desde .env
+AUTH_USERNAME = os.getenv("USER")
+AUTH_PASSWORD_HASH = os.getenv("H_PWD")
+
+# Clase de usuario único
+class SingleUser(UserMixin):
+    def __init__(self, id, username):
+        self.id = id                 # Flask-Login espera que exista .id
+        self.username = username
+
+@login_manager.user_loader
+def load_user(user_id):
+    if AUTH_USERNAME and user_id == AUTH_USERNAME:
+        return SingleUser(id=AUTH_USERNAME, username=AUTH_USERNAME)
+    return None
+
+# Rutas de autenticación
+@app.get("/login")
+def login():
+    return render_template("login.html")
+
+@app.post("/login")
+def login_post():
+    username = request.form.get("username")
+    password = request.form.get("password")
+
+    if not (AUTH_USERNAME and AUTH_PASSWORD_HASH):
+        flash("Credenciales no configuradas en el servidor.")
+        return redirect(url_for("login"))
+
+    # Validar credenciales correctas
+    if username == AUTH_USERNAME and check_password_hash(AUTH_PASSWORD_HASH, password):
+        user = SingleUser(id=AUTH_USERNAME, username=AUTH_USERNAME)
+        login_user(user, remember=False)
+        return redirect(url_for("index"))
+
+    # Si son incorrectas
+    flash("Usuario o contraseña incorrecta.")
+    return redirect(url_for("login"))
+
+@app.route("/logout", methods=["GET", "POST"])
+@login_required
+def logout():
+    logout_user()
+    return redirect(url_for("login"))
+
+# Extensiones permitidas
 XML_EXT = {".xml"}
 ZIP_EXT = {".zip"}
 
-def ext(path): 
+def ext(path):
     return os.path.splitext(path)[1].lower()
 
+# Ruta principal protegida
 @app.get("/")
+@login_required
 def index():
     return render_template("index.html")
 
+# Procesamiento de XML
 @app.post("/process-folder")
+@login_required
 def process_folder():
-    files = request.files.getlist("folder")  
+    files = request.files.getlist("folder")
     output_name = (request.form.get("output_name", "")).strip()
 
     if not files:
@@ -37,7 +101,7 @@ def process_folder():
 
             saved = []
             for f in files:
-                if not f.filename: 
+                if not f.filename:
                     continue
                 fname = secure_filename(f.filename)
                 path = os.path.join(raw_dir, fname)
@@ -63,7 +127,7 @@ def process_folder():
             with open(out_path, "rb") as f:
                 payload = io.BytesIO(f.read())
 
-        # ✅ Construimos la respuesta con headers personalizados (sin "/" en nombres)
+        # ✅ Construimos la respuesta con headers personalizados
         response = make_response(send_file(
             payload,
             as_attachment=True,
@@ -77,9 +141,10 @@ def process_folder():
         response.headers["X-Counter-N"] = str(counters["N"])
         response.headers["X-Counter-Desconocido"] = str(counters["Desconocido"])
 
-        # Habilitar que el frontend pueda leer esos headers
+        # Permitir que el frontend lea los headers
         response.headers["Access-Control-Expose-Headers"] = (
-            "X-Counter-Total, X-Counter-IE, X-Counter-P, X-Counter-N, X-Counter-Desconocido, Content-Disposition"
+            "X-Counter-Total, X-Counter-IE, X-Counter-P, X-Counter-N, "
+            "X-Counter-Desconocido, Content-Disposition"
         )
 
         return response

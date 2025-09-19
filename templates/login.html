@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Login</title>
+  <style>
+    body { font-family: system-ui, sans-serif; background:#f7f9fc; display:grid; place-items:center; height:100vh; margin:0; }
+    form { background:#fff; padding:1.5rem; border-radius:12px; box-shadow:0 6px 24px rgba(0,0,0,.08); width:min(92vw,360px); }
+    h1 { margin:0 0 1rem 0; font-size:1.25rem; }
+    label { display:block; font-weight:600; margin:.75rem 0 .25rem; }
+    input { width:100%; padding:.6rem .7rem; border:1px solid #d0d7de; border-radius:8px; }
+    button { margin-top:1rem; width:100%; padding:.7rem; border:0; border-radius:8px; font-weight:700; cursor:pointer; background:#1f6feb; color:white; }
+    .msg { color:#b42318; margin-bottom:.5rem; font-size:.9rem; }
+  </style>
+</head>
+<body>
+  <form method="post" action="/login">
+    <h1>Acceso</h1>
+    {% with messages = get_flashed_messages(category_filter=["error"]) %}
+      {% if messages %}
+        <div class="msg">{{ messages[0] }}</div>
+      {% endif %}
+    {% endwith %}
+    <label>Usuario</label>
+    <input name="username" type="text" placeholder="Usuario" required />
+    <label>Contraseña</label>
+    <input name="password" type="password" placeholder="Contraseña" required />
+    <button type="submit">Entrar</button>
+  </form>
+
+  <form method="post" action="/logout">
+  <button type="submit">Cerrar sesión</button>
+</form>
+
+</body>
+</html>

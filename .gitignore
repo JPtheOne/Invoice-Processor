@@ -9,6 +9,7 @@
 # Virtual environment directory (default name)
 .env/
 .venv/
+.env
 
 # Pipenv specific lock file
 Pipfile.lock
