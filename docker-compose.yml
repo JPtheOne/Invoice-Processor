@@ -1,0 +1,12 @@
+version: "3"
+services:
+  invoice_webapp:
+    build: .
+    container_name: invoice_webapp
+    restart: always
+    networks:
+      - webnet
+
+networks:
+  webnet:
+    external: true
