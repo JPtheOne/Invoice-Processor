@@ -94,3 +94,24 @@ pyinstaller src/gui.py --onefile --noconsole --icon=assets/logo.ico
 </p>
 
 
+## 🌐 Live Demo
+Try the **web version** of Invoice Processor here:  
+🔗 [**facturador.duckdns.org**](http://facturador.duckdns.org)
+
+*(Note: performance may vary depending on server uptime and network speed.)*
+
+---
+
+## 🧠 To-Do List
+- [X] Add support for **CFDI Retenciones**  
+- [X] Implement **batch progress bar** in PyQt5 GUI  
+- [ ] Add **dark mode** for Streamlit interface 🌙  
+- [X] Create **Dockerfile** for easy deployment 🐳  
+- [ ] Add **unit tests** for XML extractors  
+- [ ] Include **user manual (PDF)** inside repository 📘  
+
+
+## Next steps
+- Correcting website ico
+- Recreating visual interface
+- Creating different testcases
